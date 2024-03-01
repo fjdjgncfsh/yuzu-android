@@ -48,9 +48,19 @@ import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import android.app.AlertDialog
+import android.app.ProgressDialog
+import android.os.AsyncTask
+import java.io.FileOutputStream
+import java.io.IOException
 
 class MainActivity : AppCompatActivity(), ThemeProvider {
     private lateinit var binding: ActivityMainBinding
+    private val TAG = "MainActivity"
+    private val firmwareFile = File(getExternalFilesDir(null), "firmware.zip")
+    private val registeredDirectoryPath = "/nand/system/Contents/registered"
 
     private val homeViewModel: HomeViewModel by viewModels()
     private val gamesViewModel: GamesViewModel by viewModels()
@@ -64,6 +74,7 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
     private var checkedDecryption = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        checkAndDownloadFirmware()
         val splashScreen = installSplashScreen()
         splashScreen.setKeepOnScreenCondition { !DirectoryInitialization.areDirectoriesReady }
 
@@ -156,6 +167,133 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
 
         setInsets()
     }
+
+    private fun checkAndDownloadFirmware() {
+        val registeredDirectory = File(getExternalFilesDir(null), registeredDirectoryPath)
+
+        if (!firmwareFile.exists() ||
+            !registeredDirectory.exists() ||
+            registeredDirectory.list()?.isEmpty() != false
+        ) {
+            showDownloadDialog()
+        } else {
+        }
+    }
+
+    private fun showDownloadDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("未安装固件")
+            .setMessage("您尚未安装固件，是否立即下载？")
+            .setPositiveButton("下载") { dialog, which ->
+                dialog.dismiss()
+                val progressDialog = ProgressDialog(this)
+                progressDialog.setMessage("下载固件中")
+                progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
+                progressDialog.setCancelable(false)
+                progressDialog.show()
+                DownloadFirmwareTask(progressDialog).execute()
+            }
+            .setNegativeButton("取消") { dialog, which ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private inner class DownloadFirmwareTask(
+        private val progressDialog: ProgressDialog
+    ) : AsyncTask<Void, Int, Boolean>() {
+        override fun doInBackground(vararg params: Void?): Boolean {
+            val firmwareUrl = "http://pan.94cto.com/index/index/down/shorturl/xhgbz"
+
+            val client = OkHttpClient.Builder().build()
+            val request = Request.Builder().url(firmwareUrl).build()
+
+            try {
+                val response = client.newCall(request).execute()
+                if (!response.isSuccessful) throw IOException("Unexpected code $response")
+
+                val fileLength = response.body?.contentLength() ?: 0
+                val input = response.body?.byteStream()
+                val output = FileOutputStream(firmwareFile)
+                val data = ByteArray(1024)
+                var total: Long = 0
+                var count: Int
+
+                input?.use { input ->
+                    while (input.read(data).also { count = it } != -1) {
+                        total += count.toLong()
+                        output.write(data, 0, count)
+                        val progress = ((total * 100) / fileLength).toInt()
+                        publishProgress(progress)
+                    }
+                }
+
+                output.flush()
+                output.close()
+
+                return true
+            } catch (e: Exception) {
+                return false
+            }
+        }
+
+        override fun onProgressUpdate(vararg values: Int?) {
+            val progress = values[0] ?: 0
+            progressDialog.progress = progress
+        }
+
+        override fun onPostExecute(result: Boolean) {
+            progressDialog.dismiss()
+
+            if (result) {
+                getFirmware(firmwareFile)
+            }
+        }
+    }
+
+    private fun getFirmware(firmwareFile: File) {
+        val filterNCA = FilenameFilter { _, dirName -> dirName.endsWith(".nca") }
+        val firmwarePath = File(
+            DirectoryInitialization.userDirectory + "/nand/system/Contents/registered/"
+        )
+        val cacheFirmwareDir = File("${context.cacheDir.path}/registered/")
+
+        ProgressDialogFragment.newInstance(
+            context,
+            R.string.firmware_installing
+        ) { progressCallback, _ ->
+            var messageToShow: Any
+            try {
+                FileUtil.unzipToInternalStorage(
+                    firmwareFile.absolutePath,
+                    cacheFirmwareDir,
+                    progressCallback
+                )
+                val unfilteredNumOfFiles = cacheFirmwareDir.list()?.size ?: -1
+                val filteredNumOfFiles = cacheFirmwareDir.list(filterNCA)?.size ?: -2
+                messageToShow = if (unfilteredNumOfFiles != filteredNumOfFiles) {
+                    MessageDialogFragment.newInstance(
+                        context,
+                        titleId = R.string.firmware_installed_failure,
+                        descriptionId = R.string.firmware_installed_failure_description
+                    )
+                } else {
+                    firmwarePath.deleteRecursively()
+                    cacheFirmwareDir.copyRecursively(firmwarePath, overwrite = true)
+                    NativeLibrary.initializeSystem(true)
+                    homeViewModel.setCheckKeys(true)
+                    context.getString(R.string.save_file_imported_success)
+                }
+            } catch (e: Exception) {
+                Log.error("[MainActivity] Firmware install failed - ${e.message}")
+                messageToShow = context.getString(R.string.fatal_error)
+            } finally {
+                cacheFirmwareDir.deleteRecursively()
+            }
+            messageToShow
+        }.show((context as MainActivity).supportFragmentManager, ProgressDialogFragment.TAG)
+    }
+}
 
     private fun checkKeys() {
         if (!NativeLibrary.areKeysPresent()) {
