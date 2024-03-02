@@ -55,7 +55,6 @@ import android.app.ProgressDialog
 import android.os.AsyncTask
 import java.io.FileOutputStream
 import java.io.IOException
-import androidx.appcompat.app.AlertDialog
 
 class MainActivity : AppCompatActivity(), ThemeProvider {
     private lateinit var binding: ActivityMainBinding
@@ -249,45 +248,45 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
 
     private fun getFirmware(firmwareFile: File) {
         val filterNCA = FilenameFilter { _, dirName -> dirName.endsWith(".nca") }
-        val firmwarePath = File(
-            DirectoryInitialization.userDirectory + "/nand/system/Contents/registered/"
-        )
-        val cacheFirmwareDir = File("${context.cacheDir.path}/registered/")
 
-        ProgressDialogFragment.newInstance(
-            context,
-            R.string.firmware_installing
-        ) { progressCallback, _ ->
-            var messageToShow: Any
-            try {
-                FileUtil.unzipToInternalStorage(
-                    firmwareFile.absolutePath,
-                    cacheFirmwareDir,
-                    progressCallback
-                )
-                val unfilteredNumOfFiles = cacheFirmwareDir.list()?.size ?: -1
-                val filteredNumOfFiles = cacheFirmwareDir.list(filterNCA)?.size ?: -2
-                messageToShow = if (unfilteredNumOfFiles != filteredNumOfFiles) {
-                    MessageDialogFragment.newInstance(
-                        context,
-                        titleId = R.string.firmware_installed_failure,
-                        descriptionId = R.string.firmware_installed_failure_description
+            val firmwarePath =
+                File(DirectoryInitialization.userDirectory + "/nand/system/Contents/registered/")
+            val cacheFirmwareDir = File("${cacheDir.path}/registered/")
+
+            ProgressDialogFragment.newInstance(
+                this,
+                R.string.firmware_installing
+            ) { progressCallback, _ ->
+                var messageToShow: Any
+                try {
+                    FileUtil.unzipToInternalStorage(
+                        result.toString(),
+                        cacheFirmwareDir,
+                        progressCallback
                     )
-                } else {
-                    firmwarePath.deleteRecursively()
-                    cacheFirmwareDir.copyRecursively(firmwarePath, overwrite = true)
-                    NativeLibrary.initializeSystem(true)
-                    homeViewModel.setCheckKeys(true)
-                    context.getString(R.string.save_file_imported_success)
+                    val unfilteredNumOfFiles = cacheFirmwareDir.list()?.size ?: -1
+                    val filteredNumOfFiles = cacheFirmwareDir.list(filterNCA)?.size ?: -2
+                    messageToShow = if (unfilteredNumOfFiles != filteredNumOfFiles) {
+                        MessageDialogFragment.newInstance(
+                            this,
+                            titleId = R.string.firmware_installed_failure,
+                            descriptionId = R.string.firmware_installed_failure_description
+                        )
+                    } else {
+                        firmwarePath.deleteRecursively()
+                        cacheFirmwareDir.copyRecursively(firmwarePath, true)
+                        NativeLibrary.initializeSystem(true)
+                        homeViewModel.setCheckKeys(true)
+                        getString(R.string.save_file_imported_success)
+                    }
+                } catch (e: Exception) {
+                    Log.error("[MainActivity] Firmware install failed - ${e.message}")
+                    messageToShow = getString(R.string.fatal_error)
+                } finally {
+                    cacheFirmwareDir.deleteRecursively()
                 }
-            } catch (e: Exception) {
-                Log.error("[MainActivity] Firmware install failed - ${e.message}")
-                messageToShow = context.getString(R.string.fatal_error)
-            } finally {
-                cacheFirmwareDir.deleteRecursively()
-            }
-            messageToShow
-        }.show((context as MainActivity).supportFragmentManager, ProgressDialogFragment.TAG)
+                messageToShow
+            }.show(supportFragmentManager, ProgressDialogFragment.TAG)
     }
 
     private fun checkKeys() {
