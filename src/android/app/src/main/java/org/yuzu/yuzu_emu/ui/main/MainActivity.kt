@@ -168,83 +168,83 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
     }
 
     private fun checkAndDownloadFirmware() {
-    val registeredDirectory = File(getExternalFilesDir(null), registeredDirectoryPath)
+        val registeredDirectory = File(getExternalFilesDir(null), registeredDirectoryPath)
 
-    if (!firmwareFile.exists() ||
-        !registeredDirectory.exists() ||
-        registeredDirectory.list()?.isEmpty() != false
-    ) {
-        showDownloadDialog()
+        if (!firmwareFile.exists() ||
+            !registeredDirectory.exists() ||
+            registeredDirectory.list()?.isEmpty() != false
+        ) {
+            showDownloadDialog()
+        }
     }
-}
 
-private fun showDownloadDialog() {
-    AlertDialog.Builder(this)
-        .setTitle("未安装固件")
-        .setMessage("您尚未安装固件，是否立即下载？")
-        .setPositiveButton("下载") { dialog, which ->
-            dialog.dismiss()
-            val progressDialog = ProgressDialog(this).apply {
-                setMessage("下载固件中")
-                setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
-                isCancelable = false
-                show()
-            }
-            DownloadFirmwareTask(progressDialog).execute()
-        }
-        .setNegativeButton("取消") { dialog, which ->
-            dialog.dismiss()
-        }
-        .show()
-}
-
-private inner class DownloadFirmwareTask(
-    private val progressDialog: ProgressDialog
-) : AsyncTask<Void, Int, Boolean>() {
-
-    override fun doInBackground(vararg params: Void?): Boolean {
-        val firmwareUrl = "http://pan.94cto.com/index/index/down/shorturl/xhgbz"
-        val client = OkHttpClient.Builder().build()
-        val request = Request.Builder().url(firmwareUrl).build()
-
-        return try {
-            val response = client.newCall(request).execute()
-            if (!response.isSuccessful) throw IOException("Unexpected code $response")
-
-            val fileLength = response.body?.contentLength() ?: 0
-            val input = response.body?.byteStream()
-            val output = FileOutputStream(firmwareFile)
-            val data = ByteArray(1024)
-            var total: Long = 0
-            var count: Int
-
-            input?.use { inputStream ->
-                while (inputStream.read(data).also { count = it } != -1) {
-                    total += count.toLong()
-                    output.write(data, 0, count)
-                    val progress = ((total * 100) / fileLength).toInt()
-                    publishProgress(progress)
+    private fun showDownloadDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("未安装固件")
+            .setMessage("您尚未安装固件，是否立即下载？")
+            .setPositiveButton("下载") { dialog, which ->
+                dialog.dismiss()
+                val progressDialog = ProgressDialog(this).apply {
+                    setMessage("下载固件中")
+                    setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
+                    isCancelable = false
+                    show()
                 }
+                DownloadFirmwareTask(progressDialog).execute()
             }
-            output.flush()
-            output.close()
-            true
-        } catch (e: Exception) {
-            false
-        }
+            .setNegativeButton("取消") { dialog, which ->
+                dialog.dismiss()
+            }
+            .show()
     }
 
-    override fun onProgressUpdate(vararg values: Int?) {
-        progressDialog.progress = values[0] ?: 0
-    }
+    private inner class DownloadFirmwareTask(
+        private val progressDialog: ProgressDialog
+    ) : AsyncTask<Void, Int, Boolean>() {
 
-    override fun onPostExecute(result: Boolean) {
-        progressDialog.dismiss()
-        if (result) {
-            getFirmware(firmwareFile)
+        override fun doInBackground(vararg params: Void?): Boolean {
+            val firmwareUrl = "http://pan.94cto.com/index/index/down/shorturl/xhgbz"
+            val client = OkHttpClient.Builder().build()
+            val request = Request.Builder().url(firmwareUrl).build()
+
+            return try {
+                val response = client.newCall(request).execute()
+                if (!response.isSuccessful) throw IOException("Unexpected code $response")
+
+                val fileLength = response.body?.contentLength() ?: 0
+                val input = response.body?.byteStream()
+                val output = FileOutputStream(firmwareFile)
+                val data = ByteArray(1024)
+                var total: Long = 0
+                var count: Int
+
+                input?.use { inputStream ->
+                    while (inputStream.read(data).also { count = it } != -1) {
+                        total += count.toLong()
+                        output.write(data, 0, count)
+                        val progress = ((total * 100) / fileLength).toInt()
+                        publishProgress(progress)
+                    }
+                }
+                output.flush()
+                output.close()
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        override fun onProgressUpdate(vararg values: Int?) {
+            progressDialog.progress = values[0] ?: 0
+        }
+
+        override fun onPostExecute(result: Boolean) {
+            progressDialog.dismiss()
+            if (result) {
+                getFirmware(firmwareFile)
+            }
         }
     }
-}
 
     private fun checkKeys() {
         if (!NativeLibrary.areKeysPresent()) {
