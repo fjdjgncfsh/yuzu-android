@@ -58,7 +58,6 @@ import java.io.IOException
 
 class MainActivity : AppCompatActivity(), ThemeProvider {
     private lateinit var binding: ActivityMainBinding
-    private val TAG = "MainActivity"
     private val firmwareFile = File(getExternalFilesDir(null), "firmware.zip")
     private val registeredDirectoryPath = "/nand/system/Contents/registered"
 
@@ -232,7 +231,6 @@ private inner class DownloadFirmwareTask(
 
             return true
         } catch (e: Exception) {
-            // Log.e(TAG, "Error downloading firmware: ${e.message}")
             return false
         }
     }
