@@ -187,7 +187,6 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
                 val progressDialog = ProgressDialog(this).apply {
                     setMessage("下载固件中")
                     setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
-                    isCancelable = false
                     show()
                 }
                 DownloadFirmwareTask(progressDialog).execute()
@@ -260,7 +259,7 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
             var messageToShow: Any
             try {
                 FileUtil.unzipToInternalStorage(
-                    result.toString(),
+                    firmwareFile.absolutePath(),
                     cacheFirmwareDir,
                     progressCallback
                 )
