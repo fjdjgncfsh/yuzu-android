@@ -184,11 +184,12 @@ private fun showDownloadDialog() {
         .setMessage("您尚未安装固件，是否立即下载？")
         .setPositiveButton("下载") { dialog, which ->
             dialog.dismiss()
-            val progressDialog = ProgressDialog(this)
-            progressDialog.setMessage("下载固件中")
-            progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
-            progressDialog.setCancelable(false)
-            progressDialog.show()
+            val progressDialog = ProgressDialog(this).apply {
+                setMessage("下载固件中")
+                setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
+                isCancelable = false
+                show()
+            }
             DownloadFirmwareTask(progressDialog).execute()
         }
         .setNegativeButton("取消") { dialog, which ->
@@ -200,13 +201,13 @@ private fun showDownloadDialog() {
 private inner class DownloadFirmwareTask(
     private val progressDialog: ProgressDialog
 ) : AsyncTask<Void, Int, Boolean>() {
+
     override fun doInBackground(vararg params: Void?): Boolean {
         val firmwareUrl = "http://pan.94cto.com/index/index/down/shorturl/xhgbz"
-
         val client = OkHttpClient.Builder().build()
         val request = Request.Builder().url(firmwareUrl).build()
 
-        try {
+        return try {
             val response = client.newCall(request).execute()
             if (!response.isSuccessful) throw IOException("Unexpected code $response")
 
@@ -217,38 +218,35 @@ private inner class DownloadFirmwareTask(
             var total: Long = 0
             var count: Int
 
-            input?.use { input ->
-                while (input.read(data).also { count = it } != -1) {
+            input?.use { inputStream ->
+                while (inputStream.read(data).also { count = it } != -1) {
                     total += count.toLong()
                     output.write(data, 0, count)
                     val progress = ((total * 100) / fileLength).toInt()
                     publishProgress(progress)
                 }
             }
-
             output.flush()
             output.close()
-
-            return true
+            true
         } catch (e: Exception) {
-            return false
+            false
         }
     }
 
     override fun onProgressUpdate(vararg values: Int?) {
-        val progress = values[0] ?: 0
-        progressDialog.progress = progress
+        progressDialog.progress = values[0] ?: 0
     }
 
     override fun onPostExecute(result: Boolean) {
         progressDialog.dismiss()
-
         if (result) {
             getFirmware(firmwareFile)
         }
     }
 }
 
+    
     private fun getFirmware(firmwareFile: File) {
         val filterNCA = FilenameFilter { _, dirName -> dirName.endsWith(".nca") }
         val firmwarePath = File(
@@ -289,9 +287,9 @@ private inner class DownloadFirmwareTask(
                 cacheFirmwareDir.deleteRecursively()
             }
             messageToShow
-        }.show((context as MainActivity).supportFragmentManager, ProgressDialogFragment.TAG)
-    }
- }
+         }.show((context as MainActivity).supportFragmentManager, ProgressDialogFragment.TAG)
+      }
+   }
 
     private fun checkKeys() {
         if (!NativeLibrary.areKeysPresent()) {
