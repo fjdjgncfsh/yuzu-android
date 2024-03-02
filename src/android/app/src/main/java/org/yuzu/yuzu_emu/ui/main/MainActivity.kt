@@ -246,6 +246,49 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
         }
     }
 
+    private fun getFirmware(firmwareFile: File) {
+        val filterNCA = FilenameFilter { _, dirName -> dirName.endsWith(".nca") }
+        val firmwarePath = File(
+            DirectoryInitialization.userDirectory + "/nand/system/Contents/registered/"
+        )
+        val cacheFirmwareDir = File("${context.cacheDir.path}/registered/")
+
+        ProgressDialogFragment.newInstance(
+            context,
+            R.string.firmware_installing
+        ) { progressCallback, _ ->
+            var messageToShow: Any
+            try {
+                FileUtil.unzipToInternalStorage(
+                    firmwareFile.absolutePath,
+                    cacheFirmwareDir,
+                    progressCallback
+                )
+                val unfilteredNumOfFiles = cacheFirmwareDir.list()?.size ?: -1
+                val filteredNumOfFiles = cacheFirmwareDir.list(filterNCA)?.size ?: -2
+                messageToShow = if (unfilteredNumOfFiles != filteredNumOfFiles) {
+                    MessageDialogFragment.newInstance(
+                        context,
+                        titleId = R.string.firmware_installed_failure,
+                        descriptionId = R.string.firmware_installed_failure_description
+                    )
+                } else {
+                    firmwarePath.deleteRecursively()
+                    cacheFirmwareDir.copyRecursively(firmwarePath, overwrite = true)
+                    NativeLibrary.initializeSystem(true)
+                    homeViewModel.setCheckKeys(true)
+                    context.getString(R.string.save_file_imported_success)
+                }
+            } catch (e: Exception) {
+                Log.error("[MainActivity] Firmware install failed - ${e.message}")
+                messageToShow = context.getString(R.string.fatal_error)
+            } finally {
+                cacheFirmwareDir.deleteRecursively()
+            }
+            messageToShow
+        }.show((context as MainActivity).supportFragmentManager, ProgressDialogFragment.TAG)
+    }
+
     private fun checkKeys() {
         if (!NativeLibrary.areKeysPresent()) {
             MessageDialogFragment.newInstance(
