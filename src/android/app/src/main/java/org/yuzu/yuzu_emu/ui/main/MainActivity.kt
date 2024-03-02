@@ -169,87 +169,87 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
     }
 
     private fun checkAndDownloadFirmware() {
-        val registeredDirectory = File(getExternalFilesDir(null), registeredDirectoryPath)
+    val registeredDirectory = File(getExternalFilesDir(null), registeredDirectoryPath)
 
-        if (!firmwareFile.exists() ||
-            !registeredDirectory.exists() ||
-            registeredDirectory.list()?.isEmpty() != false
-        ) {
-            showDownloadDialog()
-        } else {
+    if (!firmwareFile.exists() ||
+        !registeredDirectory.exists() ||
+        registeredDirectory.list()?.isEmpty() != false
+    ) {
+        showDownloadDialog()
+    }
+}
+
+private fun showDownloadDialog() {
+    AlertDialog.Builder(this)
+        .setTitle("未安装固件")
+        .setMessage("您尚未安装固件，是否立即下载？")
+        .setPositiveButton("下载") { dialog, which ->
+            dialog.dismiss()
+            val progressDialog = ProgressDialog(this)
+            progressDialog.setMessage("下载固件中")
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
+            progressDialog.setCancelable(false)
+            progressDialog.show()
+            DownloadFirmwareTask(progressDialog).execute()
         }
-    }
+        .setNegativeButton("取消") { dialog, which ->
+            dialog.dismiss()
+        }
+        .show()
+}
 
-    private fun showDownloadDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("未安装固件")
-            .setMessage("您尚未安装固件，是否立即下载？")
-            .setPositiveButton("下载") { dialog, which ->
-                dialog.dismiss()
-                val progressDialog = ProgressDialog(this)
-                progressDialog.setMessage("下载固件中")
-                progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
-                progressDialog.setCancelable(false)
-                progressDialog.show()
-                DownloadFirmwareTask(progressDialog).execute()
-            }
-            .setNegativeButton("取消") { dialog, which ->
-                dialog.dismiss()
-            }
-            .show()
-    }
+private inner class DownloadFirmwareTask(
+    private val progressDialog: ProgressDialog
+) : AsyncTask<Void, Int, Boolean>() {
+    override fun doInBackground(vararg params: Void?): Boolean {
+        val firmwareUrl = "http://pan.94cto.com/index/index/down/shorturl/xhgbz"
 
-    private inner class DownloadFirmwareTask(
-        private val progressDialog: ProgressDialog
-    ) : AsyncTask<Void, Int, Boolean>() {
-        override fun doInBackground(vararg params: Void?): Boolean {
-            val firmwareUrl = "http://pan.94cto.com/index/index/down/shorturl/xhgbz"
+        val client = OkHttpClient.Builder().build()
+        val request = Request.Builder().url(firmwareUrl).build()
 
-            val client = OkHttpClient.Builder().build()
-            val request = Request.Builder().url(firmwareUrl).build()
+        try {
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) throw IOException("Unexpected code $response")
 
-            try {
-                val response = client.newCall(request).execute()
-                if (!response.isSuccessful) throw IOException("Unexpected code $response")
+            val fileLength = response.body?.contentLength() ?: 0
+            val input = response.body?.byteStream()
+            val output = FileOutputStream(firmwareFile)
+            val data = ByteArray(1024)
+            var total: Long = 0
+            var count: Int
 
-                val fileLength = response.body?.contentLength() ?: 0
-                val input = response.body?.byteStream()
-                val output = FileOutputStream(firmwareFile)
-                val data = ByteArray(1024)
-                var total: Long = 0
-                var count: Int
-
-                input?.use { input ->
-                    while (input.read(data).also { count = it } != -1) {
-                        total += count.toLong()
-                        output.write(data, 0, count)
-                        val progress = ((total * 100) / fileLength).toInt()
-                        publishProgress(progress)
-                    }
+            input?.use { input ->
+                while (input.read(data).also { count = it } != -1) {
+                    total += count.toLong()
+                    output.write(data, 0, count)
+                    val progress = ((total * 100) / fileLength).toInt()
+                    publishProgress(progress)
                 }
-
-                output.flush()
-                output.close()
-
-                return true
-            } catch (e: Exception) {
-                return false
             }
-        }
 
-        override fun onProgressUpdate(vararg values: Int?) {
-            val progress = values[0] ?: 0
-            progressDialog.progress = progress
-        }
+            output.flush()
+            output.close()
 
-        override fun onPostExecute(result: Boolean) {
-            progressDialog.dismiss()
-
-            if (result) {
-                getFirmware(firmwareFile)
-            }
+            return true
+        } catch (e: Exception) {
+            // Log.e(TAG, "Error downloading firmware: ${e.message}")
+            return false
         }
     }
+
+    override fun onProgressUpdate(vararg values: Int?) {
+        val progress = values[0] ?: 0
+        progressDialog.progress = progress
+    }
+
+    override fun onPostExecute(result: Boolean) {
+        progressDialog.dismiss()
+
+        if (result) {
+            getFirmware(firmwareFile)
+        }
+    }
+}
 
     private fun getFirmware(firmwareFile: File) {
         val filterNCA = FilenameFilter { _, dirName -> dirName.endsWith(".nca") }
@@ -293,7 +293,7 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
             messageToShow
         }.show((context as MainActivity).supportFragmentManager, ProgressDialogFragment.TAG)
     }
-}
+ }
 
     private fun checkKeys() {
         if (!NativeLibrary.areKeysPresent()) {
@@ -327,6 +327,7 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
             (binding.navigationView as NavigationBarView).setupWithNavController(navController)
         }
     }
+    
 
     private fun showNavigation(visible: Boolean, animated: Boolean) {
         if (!animated) {
