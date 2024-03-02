@@ -259,7 +259,7 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
             var messageToShow: Any
             try {
                 FileUtil.unzipToInternalStorage(
-                    firmwareFile.absolutePath(),
+                    firmwareFile.absolutePath,
                     cacheFirmwareDir,
                     progressCallback
                 )
