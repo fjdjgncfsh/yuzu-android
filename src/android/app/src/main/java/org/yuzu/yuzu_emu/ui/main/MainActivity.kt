@@ -179,16 +179,16 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
     }
 
     private fun showDownloadDialog() {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this@MainActivity)
             .setTitle("未安装固件")
             .setMessage("您尚未安装固件，是否立即下载？")
             .setPositiveButton("下载") { dialog, which ->
                 dialog.dismiss()
-                val progressDialog = ProgressDialog(this).apply {
-                    setMessage("下载固件中")
-                    setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
-                    show()
-                }
+                val progressDialog = ProgressDialog(this@MainActivity)
+                progressDialog.setMessage("下载固件中")
+                progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
+                progressDialog.setCancelable(false)
+                progressDialog.show()
                 DownloadFirmwareTask(progressDialog).execute()
             }
             .setNegativeButton("取消") { dialog, which ->
