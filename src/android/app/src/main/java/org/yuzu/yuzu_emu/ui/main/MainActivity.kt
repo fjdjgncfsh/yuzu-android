@@ -259,7 +259,7 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
         ) { progressCallback, _ ->
             var messageToShow: Any
             try {
-                    FileUtil.unzipToInternalStorage(
+                FileUtil.unzipToInternalStorage(
                     result.toString(),
                     cacheFirmwareDir,
                     progressCallback
@@ -272,7 +272,7 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
                         titleId = R.string.firmware_installed_failure,
                         descriptionId = R.string.firmware_installed_failure_description
                     )
-               } else {
+                } else {
                     firmwarePath.deleteRecursively()
                     cacheFirmwareDir.copyRecursively(firmwarePath, true)
                     NativeLibrary.initializeSystem(true)
