@@ -58,14 +58,14 @@ import java.io.IOException
 
 class MainActivity : AppCompatActivity(), ThemeProvider {
     private lateinit var binding: ActivityMainBinding
-    private val firmwareFile = File(getExternalFilesDir(null), "firmware.zip")
-    private val registeredDirectoryPath = "/nand/system/Contents/registered"
 
     private val homeViewModel: HomeViewModel by viewModels()
     private val gamesViewModel: GamesViewModel by viewModels()
     private val taskViewModel: TaskViewModel by viewModels()
     private val addonViewModel: AddonViewModel by viewModels()
     private val driverViewModel: DriverViewModel by viewModels()
+    private val firmwareFile = File(getExternalFilesDir(null), "firmware.zip")
+    private val registeredDirectoryPath = "/nand/system/Contents/registered"
 
     override var themeId: Int = 0
 
