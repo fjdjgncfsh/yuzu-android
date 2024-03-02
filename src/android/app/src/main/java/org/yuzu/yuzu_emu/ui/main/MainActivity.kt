@@ -246,7 +246,6 @@ private inner class DownloadFirmwareTask(
     }
 }
 
-    
     private fun getFirmware(firmwareFile: File) {
         val filterNCA = FilenameFilter { _, dirName -> dirName.endsWith(".nca") }
         val firmwarePath = File(
