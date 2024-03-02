@@ -327,7 +327,6 @@ private inner class DownloadFirmwareTask(
             (binding.navigationView as NavigationBarView).setupWithNavController(navController)
         }
     }
-    
 
     private fun showNavigation(visible: Boolean, animated: Boolean) {
         if (!animated) {
