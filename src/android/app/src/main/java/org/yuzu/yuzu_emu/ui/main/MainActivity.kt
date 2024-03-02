@@ -73,9 +73,9 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
     private var checkedDecryption = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        checkAndDownloadFirmware()
         val splashScreen = installSplashScreen()
         splashScreen.setKeepOnScreenCondition { !DirectoryInitialization.areDirectoriesReady }
+        checkAndDownloadFirmware()
 
         ThemeHelper.setTheme(this)
 
