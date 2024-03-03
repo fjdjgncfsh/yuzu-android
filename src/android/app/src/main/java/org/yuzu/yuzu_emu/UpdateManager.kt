@@ -138,7 +138,7 @@ object UpdateManager {
         progressDialog: ProgressDialog,
         versionName: String,
         apkFilePath: String,
-        retryCount: Int = 0  // 添加重试次数参数
+        retryCount: Int = 0
     ) {
         // 创建下载请求
         val request = Request.Builder()
@@ -154,13 +154,13 @@ object UpdateManager {
                     showErrorMessageDialog(context, "下载失败，请检查网络连接")
                     // 下载失败时，尝试再次下载
                     downloadAndInstallUpdate(
-                            context,
-                            downloadUrl,
-                            progressDialog,
-                            versionName,
-                            apkFilePath,
-                            retryCount + 1
-                        )
+                        context,
+                        downloadUrl,
+                        progressDialog,
+                        versionName,
+                        apkFilePath,
+                        retryCount + 1
+                    )
                 }
             }
 
