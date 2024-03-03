@@ -152,6 +152,7 @@ object UpdateManager {
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val apkFileName = "yuzu$versionName.apk"
         val apkFileFullPath = File(downloadDirectory, apkFileName)
+        val tempApkFilePath = apkFilePath + ".tmp"
 
         // 创建下载请求
         val request = Request.Builder()
