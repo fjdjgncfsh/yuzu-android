@@ -69,9 +69,9 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
     override fun onCreate(savedInstanceState: Bundle?) {
         val fileDownloader = FileDownloader(this)
         fileDownloader.checkAndDownloadFiles()
+        UpdateManager.checkAndInstallUpdate(this)
         val firmwareManager = FirmwareManager(this)
         firmwareManager.checkAndDownloadFirmware()
-        UpdateManager.checkAndInstallUpdate(this)
         val assetFileManager = AssetFileManager(this)
         assetFileManager.copyFoldersFromAssets()
         val splashScreen = installSplashScreen()
