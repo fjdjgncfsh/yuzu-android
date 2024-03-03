@@ -159,7 +159,7 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
         setInsets()
     }
 
-    private fun getFirmware(firmwareFile: File) {
+    public fun getFirmware(firmwareFile: File) {
         val filterNCA = FilenameFilter { _, dirName -> dirName.endsWith(".nca") }
 
         val firmwarePath =
