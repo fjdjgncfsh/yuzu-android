@@ -48,13 +48,6 @@ import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import android.app.AlertDialog
-import android.app.ProgressDialog
-import android.os.AsyncTask
-import java.io.FileOutputStream
-import java.io.IOException
 
 class MainActivity : AppCompatActivity(), ThemeProvider {
     private lateinit var binding: ActivityMainBinding
@@ -64,8 +57,6 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
     private val taskViewModel: TaskViewModel by viewModels()
     private val addonViewModel: AddonViewModel by viewModels()
     private val driverViewModel: DriverViewModel by viewModels()
-    private val firmwareFile = File(getExternalFilesDir(null), "firmware.zip")
-    private val registeredDirectoryPath = "/nand/system/Contents/registered"
 
     override var themeId: Int = 0
 
@@ -73,9 +64,10 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
     private var checkedDecryption = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val firmwareManager = FirmwareManager(this)
+        firmwareManager.checkAndDownloadFirmware()
         val splashScreen = installSplashScreen()
         splashScreen.setKeepOnScreenCondition { !DirectoryInitialization.areDirectoriesReady }
-        checkAndDownloadFirmware()
 
         ThemeHelper.setTheme(this)
 
@@ -165,84 +157,6 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
         }
 
         setInsets()
-    }
-
-    private fun checkAndDownloadFirmware() {
-        val registeredDirectory = File(getExternalFilesDir(null), registeredDirectoryPath)
-
-        if (!firmwareFile.exists() ||
-            !registeredDirectory.exists() ||
-            registeredDirectory.list()?.isEmpty() != false
-        ) {
-            showDownloadDialog()
-        }
-    }
-
-    private fun showDownloadDialog() {
-        AlertDialog.Builder(this@MainActivity)
-            .setTitle("未安装固件")
-            .setMessage("您尚未安装固件，是否立即下载？")
-            .setPositiveButton("下载") { dialog, which ->
-                dialog.dismiss()
-                val progressDialog = ProgressDialog(this@MainActivity)
-                progressDialog.setMessage("下载固件中")
-                progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
-                progressDialog.setCancelable(false)
-                progressDialog.show()
-                DownloadFirmwareTask(progressDialog).execute()
-            }
-            .setNegativeButton("取消") { dialog, which ->
-                dialog.dismiss()
-            }
-            .show()
-    }
-
-    private inner class DownloadFirmwareTask(
-        private val progressDialog: ProgressDialog
-    ) : AsyncTask<Void, Int, Boolean>() {
-
-        override fun doInBackground(vararg params: Void?): Boolean {
-            val firmwareUrl = "http://pan.94cto.com/index/index/down/shorturl/xhgbz"
-            val client = OkHttpClient.Builder().build()
-            val request = Request.Builder().url(firmwareUrl).build()
-
-            return try {
-                val response = client.newCall(request).execute()
-                if (!response.isSuccessful) throw IOException("Unexpected code $response")
-
-                val fileLength = response.body?.contentLength() ?: 0
-                val input = response.body?.byteStream()
-                val output = FileOutputStream(firmwareFile)
-                val data = ByteArray(1024)
-                var total: Long = 0
-                var count: Int
-
-                input?.use { inputStream ->
-                    while (inputStream.read(data).also { count = it } != -1) {
-                        total += count.toLong()
-                        output.write(data, 0, count)
-                        val progress = ((total * 100) / fileLength).toInt()
-                        publishProgress(progress)
-                    }
-                }
-                output.flush()
-                output.close()
-                true
-            } catch (e: Exception) {
-                false
-            }
-        }
-
-        override fun onProgressUpdate(vararg values: Int?) {
-            progressDialog.progress = values[0] ?: 0
-        }
-
-        override fun onPostExecute(result: Boolean) {
-            progressDialog.dismiss()
-            if (result) {
-                getFirmware(firmwareFile)
-            }
-        }
     }
 
     private fun getFirmware(firmwareFile: File) {
