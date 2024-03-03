@@ -143,7 +143,6 @@ object UpdateManager {
         versionName: String,
         apkFilePath: String
     ) {
-
         val oldApkFile = File(apkFilePath)
         if (oldApkFile.exists()) {
             oldApkFile.delete()
