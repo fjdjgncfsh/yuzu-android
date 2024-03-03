@@ -1,4 +1,4 @@
-package org.yuzu.yuzu_emu
+package org.yuzu.yuzu_emu.ui.main
 
 import android.app.AlertDialog
 import android.app.ProgressDialog
