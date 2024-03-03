@@ -196,6 +196,9 @@ object UpdateManager {
                                     }
                             }
                         }
+                        val tempFile = File(apkFilePath)
+                        val targetFile = File(apkFilePath)
+                        tempFile.renameTo(targetFile)
                         (context as LifecycleOwner).lifecycleScope.launch(Dispatchers.Main) {
                             progressDialog.dismiss()
                             installUpdate(context, apkFileFullPath.absolutePath)
