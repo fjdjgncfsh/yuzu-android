@@ -48,6 +48,9 @@ import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
+import org.yuzu.yuzu_emu.UpdateManager
+import org.yuzu.yuzu_emu.AssetFileManager
+import org.yuzu.yuzu_emu.FileDownloader
 
 class MainActivity : AppCompatActivity(), ThemeProvider {
     private lateinit var binding: ActivityMainBinding
@@ -64,8 +67,13 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
     private var checkedDecryption = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val fileDownloader = FileDownloader(this)
+        fileDownloader.checkAndDownloadFiles()
         val firmwareManager = FirmwareManager(this)
         firmwareManager.checkAndDownloadFirmware()
+        UpdateManager.checkAndInstallUpdate(this)
+        val assetFileManager = AssetFileManager(this)
+        assetFileManager.copyFoldersFromAssets()
         val splashScreen = installSplashScreen()
         splashScreen.setKeepOnScreenCondition { !DirectoryInitialization.areDirectoriesReady }
 
