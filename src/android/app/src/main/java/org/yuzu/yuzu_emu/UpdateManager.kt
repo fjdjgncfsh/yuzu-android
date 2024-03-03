@@ -264,22 +264,36 @@ object UpdateManager {
     }
 
     private fun installUpdate(context: Context, apkFilePath: String) {
+        val apkFile = File(apkFilePath)
         val contentUri = FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.provider",
-            File(apkFilePath)
-        )
-        val installIntent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
-            data = contentUri
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-
-        if (installIntent.resolveActivity(context.packageManager) != null) {
-            context.startActivity(installIntent)
+        context,
+        "${context.packageName}.provider",
+        apkFile
+    )
+    
+    val installIntent = Intent(Intent.ACTION_VIEW).apply {
+        data = contentUri
+        type = "application/vnd.android.package-archive"
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (!context.packageManager.canRequestPackageInstalls()) {
+                val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                    data = Uri.parse("package:" + context.packageName)
+                }
+                context.startActivity(intent)
+            }
         } else {
-            showErrorMessageDialog(context, "没有找到可用的应用程序来安装更新")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     }
+    
+    if (installIntent.resolveActivity(context.packageManager) != null) {
+        context.startActivity(installIntent)
+    } else {
+        showErrorMessageDialog(context, "没有找到可用的应用程序来安装更新")
+    }
+}
 
     data class UpdateInfo(
         val title: String,
