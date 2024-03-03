@@ -3,6 +3,7 @@ package org.yuzu.yuzu_emu
 import android.content.Context
 import android.content.Intent
 import android.os.Environment
+import android.util.Log
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
@@ -59,25 +60,29 @@ object UpdateManager {
                         json.has("content") &&
                         json.has("versionName") &&
                         json.has("downloadUrl") &&
-                        json.has("md5Hash")
+                        json.has("sha256Hash")
                     ) {
                         UpdateInfo(
                             title = json.getString("title"),
                             content = json.getString("content"),
                             versionName = json.getString("versionName"),
                             downloadUrl = json.getString("downloadUrl"),
-                            hashValue = json.getString("md5Hash")
+                            hashValue = json.getString("sha256Hash")
                         )
                     } else {
+                        Log.e("UpdateManager", "响应数据格式错误")
                         UpdateInfo("", "", "", "", "")
                     }
                 }
             } else {
+                Log.e("UpdateManager", "未获取到有效的输入流")
                 UpdateInfo("", "", "", "", "")
             }
         } catch (e: IOException) {
+            Log.e("UpdateManager", "处理响应时出错: ${e.message}")
             UpdateInfo("", "", "", "", "")
         } catch (e: JSONException) {
+            Log.e("UpdateManager", "解析更新信息时出错: ${e.message}")
             UpdateInfo("", "", "", "", "")
         }
     }
@@ -136,9 +141,19 @@ object UpdateManager {
         downloadUrl: String,
         progressDialog: ProgressDialog,
         versionName: String,
-        apkFilePath: String,
-        retryCount: Int = 0
+        apkFilePath: String
     ) {
+
+        val oldApkFile = File(apkFilePath)
+        if (oldApkFile.exists()) {
+            oldApkFile.delete()
+        }
+
+        val downloadDirectory =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val apkFileName = "yuzu$versionName.apk"
+        val apkFileFullPath = File(downloadDirectory, apkFileName)
+
         // 创建下载请求
         val request = Request.Builder()
             .url(downloadUrl)
@@ -149,17 +164,9 @@ object UpdateManager {
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 (context as LifecycleOwner).lifecycleScope.launch(Dispatchers.Main) {
+                    Log.e("UpdateManager", "下载失败: ${e.message}")
                     progressDialog.dismiss()
                     showErrorMessageDialog(context, "下载失败，请检查网络连接")
-                    // 下载失败时，尝试再次下载
-                    downloadAndInstallUpdate(
-                        context,
-                        downloadUrl,
-                        progressDialog,
-                        versionName,
-                        apkFilePath,
-                        retryCount + 1
-                    )
                 }
             }
 
@@ -173,25 +180,37 @@ object UpdateManager {
                     inputStream = response.body?.byteStream()
 
                     if (inputStream != null) {
-                        File(apkFilePath).outputStream().use { output ->
+                        apkFileFullPath.outputStream().use { output ->
                             val buffer = ByteArray(8192)
                             var bytesRead: Int
+                            var totalBytesRead: Long = 0
+                            val contentLength = response.body!!.contentLength()
                             while (inputStream.read(buffer).also { bytesRead = it } != -1) {
                                 output.write(buffer, 0, bytesRead)
+                                totalBytesRead += bytesRead.toLong()
+                                val progress = (totalBytesRead * 100 / contentLength).toInt()
+                                (context as LifecycleOwner)
+                                    .lifecycleScope
+                                    .launch(Dispatchers.Main) {
+                                        progressDialog.progress = progress
+                                        progressDialog.setMessage("下载进度: $progress%")
+                                    }
                             }
                         }
                         (context as LifecycleOwner).lifecycleScope.launch(Dispatchers.Main) {
                             progressDialog.dismiss()
-                            installUpdate(context, apkFilePath)
+                            installUpdate(context, apkFileFullPath.absolutePath)
                         }
                     } else {
                         (context as LifecycleOwner).lifecycleScope.launch(Dispatchers.Main) {
+                            Log.e("UpdateManager", "下载失败: HTTP ${response.code}")
                             progressDialog.dismiss()
-                            showErrorMessageDialog(context, "下载失败，无法获取输入流")
+                            showErrorMessageDialog(context, "下载失败，HTTP ${response.code}")
                         }
                     }
                 } catch (e: IOException) {
                     (context as LifecycleOwner).lifecycleScope.launch(Dispatchers.Main) {
+                        Log.e("UpdateManager", "复制文件时出错: ${e.message}")
                         progressDialog.dismiss()
                         showErrorMessageDialog(context, "下载失败，复制文件时出错")
                     }
@@ -217,17 +236,19 @@ object UpdateManager {
         }
 
         return try {
-            val calculatedHash = calculateMD5Hash(file)
+            val calculatedHash = calculateSHA256Hash(file)
             calculatedHash == expectedHash
         } catch (e: IOException) {
+            Log.e("UpdateManager", "读取APK文件时出错: ${e.message}")
             false
         } catch (e: NoSuchAlgorithmException) {
+            Log.e("UpdateManager", "计算哈希时出错: ${e.message}")
             false
         }
     }
 
-    private fun calculateMD5Hash(file: File): String {
-        val messageDigest = MessageDigest.getInstance("MD5")
+    private fun calculateSHA256Hash(file: File): String {
+        val messageDigest = MessageDigest.getInstance("SHA-256")
         file.inputStream().use { fis ->
             val byteArray = ByteArray(8192)
             var bytesRead: Int
