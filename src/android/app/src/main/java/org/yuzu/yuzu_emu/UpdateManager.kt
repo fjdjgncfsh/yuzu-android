@@ -60,29 +60,25 @@ object UpdateManager {
                         json.has("content") &&
                         json.has("versionName") &&
                         json.has("downloadUrl") &&
-                        json.has("sha256Hash")
+                        json.has("md5Hash")
                     ) {
                         UpdateInfo(
                             title = json.getString("title"),
                             content = json.getString("content"),
                             versionName = json.getString("versionName"),
                             downloadUrl = json.getString("downloadUrl"),
-                            hashValue = json.getString("sha256Hash")
+                            hashValue = json.getString("md5Hash")
                         )
                     } else {
-                        Log.e("UpdateManager", "响应数据格式错误")
                         UpdateInfo("", "", "", "", "")
                     }
                 }
             } else {
-                Log.e("UpdateManager", "未获取到有效的输入流")
                 UpdateInfo("", "", "", "", "")
             }
         } catch (e: IOException) {
-            Log.e("UpdateManager", "处理响应时出错: ${e.message}")
             UpdateInfo("", "", "", "", "")
         } catch (e: JSONException) {
-            Log.e("UpdateManager", "解析更新信息时出错: ${e.message}")
             UpdateInfo("", "", "", "", "")
         }
     }
@@ -141,13 +137,9 @@ object UpdateManager {
         downloadUrl: String,
         progressDialog: ProgressDialog,
         versionName: String,
-        apkFilePath: String
+        apkFilePath: String,
+        retryCount: Int = 0  // 添加重试次数参数
     ) {
-        val downloadDirectory =
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val apkFileName = "yuzu$versionName.apk"
-        val apkFileFullPath = File(downloadDirectory, apkFileName)
-
         // 创建下载请求
         val request = Request.Builder()
             .url(downloadUrl)
@@ -158,9 +150,17 @@ object UpdateManager {
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 (context as LifecycleOwner).lifecycleScope.launch(Dispatchers.Main) {
-                    Log.e("UpdateManager", "下载失败: ${e.message}")
                     progressDialog.dismiss()
                     showErrorMessageDialog(context, "下载失败，请检查网络连接")
+                    // 下载失败时，尝试再次下载
+                    downloadAndInstallUpdate(
+                            context,
+                            downloadUrl,
+                            progressDialog,
+                            versionName,
+                            apkFilePath,
+                            retryCount + 1
+                        )
                 }
             }
 
@@ -174,37 +174,25 @@ object UpdateManager {
                     inputStream = response.body?.byteStream()
 
                     if (inputStream != null) {
-                        apkFileFullPath.outputStream().use { output ->
+                        File(apkFilePath).outputStream().use { output ->
                             val buffer = ByteArray(8192)
                             var bytesRead: Int
-                            var totalBytesRead: Long = 0
-                            val contentLength = response.body!!.contentLength()
                             while (inputStream.read(buffer).also { bytesRead = it } != -1) {
                                 output.write(buffer, 0, bytesRead)
-                                totalBytesRead += bytesRead.toLong()
-                                val progress = (totalBytesRead * 100 / contentLength).toInt()
-                                (context as LifecycleOwner)
-                                    .lifecycleScope
-                                    .launch(Dispatchers.Main) {
-                                        progressDialog.progress = progress
-                                        progressDialog.setMessage("下载进度: $progress%")
-                                    }
                             }
                         }
                         (context as LifecycleOwner).lifecycleScope.launch(Dispatchers.Main) {
                             progressDialog.dismiss()
-                            installUpdate(context, apkFileFullPath.absolutePath)
+                            installUpdate(context, apkFilePath)
                         }
                     } else {
                         (context as LifecycleOwner).lifecycleScope.launch(Dispatchers.Main) {
-                            Log.e("UpdateManager", "下载失败: HTTP ${response.code}")
                             progressDialog.dismiss()
-                            showErrorMessageDialog(context, "下载失败，HTTP ${response.code}")
+                            showErrorMessageDialog(context, "下载失败，无法获取输入流")
                         }
                     }
                 } catch (e: IOException) {
                     (context as LifecycleOwner).lifecycleScope.launch(Dispatchers.Main) {
-                        Log.e("UpdateManager", "复制文件时出错: ${e.message}")
                         progressDialog.dismiss()
                         showErrorMessageDialog(context, "下载失败，复制文件时出错")
                     }
@@ -230,19 +218,17 @@ object UpdateManager {
         }
 
         return try {
-            val calculatedHash = calculateSHA256Hash(file)
+            val calculatedHash = calculateMD5Hash(file)
             calculatedHash == expectedHash
         } catch (e: IOException) {
-            Log.e("UpdateManager", "读取APK文件时出错: ${e.message}")
             false
         } catch (e: NoSuchAlgorithmException) {
-            Log.e("UpdateManager", "计算哈希时出错: ${e.message}")
             false
         }
     }
 
-    private fun calculateSHA256Hash(file: File): String {
-        val messageDigest = MessageDigest.getInstance("SHA-256")
+    private fun calculateMD5Hash(file: File): String {
+        val messageDigest = MessageDigest.getInstance("MD5")
         file.inputStream().use { fis ->
             val byteArray = ByteArray(8192)
             var bytesRead: Int
