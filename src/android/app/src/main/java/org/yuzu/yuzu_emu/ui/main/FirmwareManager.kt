@@ -40,7 +40,7 @@ class FirmwareManager(private val context: Context) {
             .setPositiveButton("下载") { dialog, which ->
                 dialog.dismiss()
                 val progressDialog = ProgressDialog(context)
-                progressDialog.setMessage("下载固件中 大约3分钟")
+                progressDialog.setMessage("下载固件中")
                 progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
                 progressDialog.setCancelable(false)
                 progressDialog.show()
@@ -98,10 +98,13 @@ class FirmwareManager(private val context: Context) {
         }
 
         override fun onPostExecute(result: Boolean) {
-            progressDialog.dismiss()
             if (result) {
-                val mainActivity = context as MainActivity
-                mainActivity.getFirmware(firmwareFile)
+                val mainActivity = context as? MainActivity
+                mainActivity?.getFirmware(firmwareFile)
+                progressDialog.dismiss()
+            } else {
+                // 如果下载发生错误，重新尝试下载
+                execute() // 重新执行下载任务
             }
         }
     }
