@@ -102,6 +102,7 @@ class FirmwareManager(private val context: Context) {
             if (result) {
                 val mainActivity = context as MainActivity
                 mainActivity.getFirmware(firmwareFile)
-                )
             }
         }
+    }
+}
