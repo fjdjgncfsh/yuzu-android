@@ -269,8 +269,8 @@ object UpdateManager {
             "${context.packageName}.provider",
             File(apkFilePath)
         )
-        val installIntent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
-            data = contentUri
+        val installIntent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(contentUri, "application/vnd.android.package-archive")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
 
