@@ -270,7 +270,7 @@ object UpdateManager {
         "${context.packageName}.provider",
         apkFile
     )
-    
+
     val installIntent = Intent(Intent.ACTION_VIEW).apply {
         data = contentUri
         type = "application/vnd.android.package-archive"
@@ -287,7 +287,7 @@ object UpdateManager {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     }
-    
+
     if (installIntent.resolveActivity(context.packageManager) != null) {
         context.startActivity(installIntent)
     } else {
