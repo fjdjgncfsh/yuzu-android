@@ -99,7 +99,7 @@ object UpdateManager {
         val downloadDirectory =
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val currentTimeStamp = System.currentTimeMillis()
-        val apkFileName = "yuzu_${updateInfo.versionName}_${currentTimeStamp}.apk"
+        val apkFileName = "yuzu_${updateInfo.versionName}_$currentTimeStamp.apk"
         val apkFileFullPath = File(downloadDirectory, apkFileName)
 
         val isApkValid = isApkIntegrityValid(apkFilePath, updateInfo.hashValue)
@@ -144,7 +144,6 @@ object UpdateManager {
         versionName: String,
         apkFilePath: String
     ) {
-
         val oldApkFile = File(apkFilePath)
         if (oldApkFile.exists()) {
             oldApkFile.delete()
@@ -153,7 +152,7 @@ object UpdateManager {
         val downloadDirectory =
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val currentTimeStamp = System.currentTimeMillis()
-        val apkFileName = "yuzu_${updateInfo.versionName}_${currentTimeStamp}.apk"
+        val apkFileName = "yuzu_${updateInfo.versionName}_$currentTimeStamp.apk"
         val apkFileFullPath = File(downloadDirectory, apkFileName)
 
         // 创建下载请求
