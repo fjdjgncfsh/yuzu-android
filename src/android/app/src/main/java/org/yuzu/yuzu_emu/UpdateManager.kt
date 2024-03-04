@@ -99,7 +99,7 @@ object UpdateManager {
         val downloadDirectory =
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val currentTimeStamp = System.currentTimeMillis()
-        val apkFileName = "yuzu_${updateInfo.versionName}_${currentTimeStamp}.apk"
+        val apkFileName = "yuzu_${updateInfo.versionName}_$currentTimeStamp.apk"
         val apkFileFullPath = File(downloadDirectory, apkFileName)
 
         val isApkValid = isApkIntegrityValid(apkFileFullPath.absolutePath, updateInfo.hashValue)
@@ -152,7 +152,7 @@ object UpdateManager {
         val downloadDirectory =
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val currentTimeStamp = System.currentTimeMillis()
-        val apkFileName = "yuzu_${versionName}_${currentTimeStamp}.apk"
+        val apkFileName = "yuzu_${versionName}_$currentTimeStamp.apk"
         val apkFileFullPath = File(downloadDirectory, apkFileName)
 
         // 创建下载请求
