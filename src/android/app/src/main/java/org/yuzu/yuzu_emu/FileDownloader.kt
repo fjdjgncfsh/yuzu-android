@@ -12,15 +12,17 @@ import java.security.MessageDigest
 class FileDownloader(private val context: Context) {
     companion object {
         private const val PROD_KEYS_URL = "http://mkoc.cn/prod.keys"
-        private const val GPU_DRIVERS_URL = "http://mkoc.cn/turnip-24.1.0.adpkg_R17-v2.zip"
+        private const val GPU_DRIVERS_URL = "http://pan.94cto.com/index/index/down/shorturl/cmuxt"
+        private const val NEW_DRIVER_1_URL = "http://pan.94cto.com/index/index/down/shorturl/zk43r"
+        private const val NEW_DRIVER_2_URL = "http://pan.94cto.com/index/index/down/shorturl/khpxm"
 
-        // 替换为你预期的哈希值
         private const val PROD_KEYS_HASH = "4ed853d4a52e6b9b9e11954f155ecb8a"
         private const val GPU_DRIVERS_HASH = "dbdb8d8fe6d6a310be79ad93b7d038ec"
+        private const val NEW_DRIVER_1_HASH = "fa6ad835ae20ea02a5d667e2953ab0be"
+        private const val NEW_DRIVER_2_HASH = "1a9eaa252da47557d32e54f27cd8ab5d"
     }
 
     fun checkAndDownloadFiles() {
-        // 检查并下载 prod.keys 文件
         val prodKeysFile = getOrCreateFile(
             "prod.keys",
             PROD_KEYS_URL,
@@ -28,12 +30,25 @@ class FileDownloader(private val context: Context) {
             PROD_KEYS_HASH
         )
 
-        // 检查并下载 GPU 驱动文件
         val gpuDriversFile = getOrCreateFile(
-            "turnip-24.1.0.adpkg_R17-v2.zip",
+            "turnip-24.1.0.R17.zip",
             GPU_DRIVERS_URL,
             "gpu_drivers",
             GPU_DRIVERS_HASH
+        )
+
+        val newDriver1File = getOrCreateFile(
+            "turnip-24.1.0.R16.zip",
+            NEW_DRIVER_1_URL,
+            "gpu_drivers",
+            NEW_DRIVER_1_HASH
+        )
+
+        val newDriver2File = getOrCreateFile(
+            "turnip-24.0.0.R15.zip",
+            NEW_DRIVER_2_URL,
+            "new_drivers",
+            NEW_DRIVER_2_HASH
         )
     }
 
@@ -48,12 +63,10 @@ class FileDownloader(private val context: Context) {
         val outputFile = File(targetDir, fileName)
 
         if (!outputFile.exists()) {
-            // 使用协程在后台执行下载任务
             GlobalScope.launch(Dispatchers.IO) {
                 downloadFile(downloadUrl, outputFile, expectedHash)
             }
         } else {
-            // 校验文件哈希值
             val actualHash = calculateMD5(outputFile)
             if (actualHash != expectedHash) {
                 println("$fileName 文件哈希值不匹配，重新下载.")
@@ -88,7 +101,6 @@ class FileDownloader(private val context: Context) {
             output.close()
             input.close()
 
-            // 校验下载后的文件哈希值
             val actualHash = calculateMD5(outputFile)
             if (actualHash != expectedHash) {
                 println("下载文件 ${outputFile.name} 时出错: 哈希值不匹配.")
