@@ -20,7 +20,6 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import java.security.NoSuchAlgorithmException
 import java.io.InputStream
-import kotlin.system.System
 
 object UpdateManager {
     private val client = OkHttpClient()
@@ -100,14 +99,14 @@ object UpdateManager {
         val downloadDirectory =
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val currentTimeStamp = System.currentTimeMillis()
-        val apkFileName = "yuzu_${updateInfo.versionName}_$currentTimeStamp.apk"
+        val apkFileName = "yuzu_${updateInfo.versionName}_${currentTimeStamp}.apk"
         val apkFileFullPath = File(downloadDirectory, apkFileName)
 
-        val isApkValid = isApkIntegrityValid(apkFilePath, updateInfo.hashValue)
+        val isApkValid = isApkIntegrityValid(apkFileFullPath.absolutePath, updateInfo.hashValue)
 
         if (isApkValid) {
             dialogBuilder.setPositiveButton("安装") { _, _ ->
-                installUpdate(context, apkFilePath)
+                installUpdate(context, apkFileFullPath.absolutePath)
             }
         } else {
             dialogBuilder.setPositiveButton("更新") { _, _ ->
@@ -117,7 +116,7 @@ object UpdateManager {
                     updateInfo.downloadUrl,
                     progressDialog,
                     updateInfo.versionName,
-                    apkFilePath
+                    apkFileFullPath.absolutePath
                 )
             }
         }
@@ -153,7 +152,7 @@ object UpdateManager {
         val downloadDirectory =
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val currentTimeStamp = System.currentTimeMillis()
-        val apkFileName = "yuzu_${updateInfo.versionName}_$currentTimeStamp.apk"
+        val apkFileName = "yuzu_${versionName}_${currentTimeStamp}.apk"
         val apkFileFullPath = File(downloadDirectory, apkFileName)
 
         // 创建下载请求
