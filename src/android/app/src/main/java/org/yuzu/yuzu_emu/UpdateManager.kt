@@ -20,6 +20,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import java.security.NoSuchAlgorithmException
 import java.io.InputStream
+import kotlin.system.System
 
 object UpdateManager {
     private val client = OkHttpClient()
