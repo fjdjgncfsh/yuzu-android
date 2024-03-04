@@ -98,8 +98,9 @@ object UpdateManager {
 
         val downloadDirectory =
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val apkFileName = "yuzu${updateInfo.versionName}.apk"
-        val apkFilePath = File(downloadDirectory, apkFileName).absolutePath
+        val currentTimeStamp = System.currentTimeMillis()
+        val apkFileName = "yuzu_${updateInfo.versionName}_${currentTimeStamp}.apk"
+        val apkFileFullPath = File(downloadDirectory, apkFileName)
 
         val isApkValid = isApkIntegrityValid(apkFilePath, updateInfo.hashValue)
 
@@ -143,6 +144,7 @@ object UpdateManager {
         versionName: String,
         apkFilePath: String
     ) {
+
         val oldApkFile = File(apkFilePath)
         if (oldApkFile.exists()) {
             oldApkFile.delete()
@@ -150,9 +152,9 @@ object UpdateManager {
 
         val downloadDirectory =
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val apkFileName = "yuzu$versionName.apk"
+        val currentTimeStamp = System.currentTimeMillis()
+        val apkFileName = "yuzu_${updateInfo.versionName}_${currentTimeStamp}.apk"
         val apkFileFullPath = File(downloadDirectory, apkFileName)
-        val tempApkFilePath = apkFilePath + ".tmp"
 
         // 创建下载请求
         val request = Request.Builder()
@@ -197,9 +199,6 @@ object UpdateManager {
                                     }
                             }
                         }
-                        val tempFile = File(apkFilePath)
-                        val targetFile = File(apkFilePath)
-                        tempFile.renameTo(targetFile)
                         (context as LifecycleOwner).lifecycleScope.launch(Dispatchers.Main) {
                             progressDialog.dismiss()
                             installUpdate(context, apkFileFullPath.absolutePath)
