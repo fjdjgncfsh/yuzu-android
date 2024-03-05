@@ -514,35 +514,27 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     }
 
     private fun updateThermalOverlay() {
-        val showOverlay = BooleanSetting.SHOW_THERMAL_OVERLAY.getBoolean()
-        binding.showThermalsText.setVisible(showOverlay)
-        if (showOverlay) {
-            thermalStatsUpdater = {
-                if (emulationViewModel.emulationStarted.value &&
-                    !emulationViewModel.isEmulationStopping.value
-                ) {
-                    val thermalStatus = when (powerManager.currentThermalStatus) {
-                        PowerManager.THERMAL_STATUS_LIGHT -> "😥"
-                        PowerManager.THERMAL_STATUS_MODERATE -> "🥵"
-                        PowerManager.THERMAL_STATUS_SEVERE -> "🔥"
-                        PowerManager.THERMAL_STATUS_CRITICAL,
-                        PowerManager.THERMAL_STATUS_EMERGENCY,
-                        PowerManager.THERMAL_STATUS_SHUTDOWN -> "☢️"
-
-                        else -> "🙂"
-                    }
-                    if (_binding != null) {
-                        binding.showThermalsText.text = thermalStatus
-                    }
-                    thermalStatsUpdateHandler.postDelayed(thermalStatsUpdater!!, 1000)
-                }
-            }
-            thermalStatsUpdateHandler.post(thermalStatsUpdater!!)
-        } else {
-            if (thermalStatsUpdater != null) {
-                thermalStatsUpdateHandler.removeCallbacks(thermalStatsUpdater!!)
+    val showOverlay = BooleanSetting.SHOW_THERMAL_OVERLAY.getBoolean()
+    binding.showThermalsText.setVisible(showOverlay)
+    if (showOverlay) {
+        if (emulationViewModel.emulationStarted.value &&
+            !emulationViewModel.isEmulationStopping.value
+        ) {
+            val temperature = getBatteryTemperature(context)
+            if (_binding != null) {
+                binding.showThermalsText.text = "$temperature°C"
+                binding.showThermalsText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20)
             }
         }
+    } else {
+        binding.showThermalsText.setVisible(false)
+    }
+    }
+
+    private fun getBatteryTemperature(context: Context): Float {
+    val intent: Intent? = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+    val temperature = intent?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0
+    return temperature / 10.0f
     }
 
     @SuppressLint("SourceLockedOrientationActivity")
