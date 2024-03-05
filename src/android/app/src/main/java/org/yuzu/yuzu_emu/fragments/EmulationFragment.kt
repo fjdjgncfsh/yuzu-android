@@ -532,7 +532,10 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     }
 
     private fun getBatteryTemperature(context: Context): Float {
-        val intent: Intent? = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val intent: Intent? = context.registerReceiver(
+            null, 
+            IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        )
         val temperature = intent?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0
         return temperature / 10.0f
     }
