@@ -1,9 +1,5 @@
-name: 'yuzu-android-build'
-
 on:
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   android:
@@ -45,6 +41,7 @@ jobs:
         with:
           name: android
           path: artifacts/
+  
   # release steps
   release-android:
     runs-on: ubuntu-latest
