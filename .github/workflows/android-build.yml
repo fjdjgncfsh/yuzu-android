@@ -10,10 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.repository == 'yuzu-emu/yuzu-android' }}
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-          fetch-depth: 0
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
