@@ -16,10 +16,6 @@ jobs:
     container: yuzuemu/build-environments:linux-transifex
     if: ${{ github.repository == 'yuzu-emu/yuzu' && !github.head_ref }}
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-          fetch-depth: 0
       - name: Update Translation
         run: ./.ci/scripts/transifex/docker.sh
         env:
@@ -29,5 +25,4 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.repository == 'yuzu-emu/yuzu' }}
     steps:
-    - uses: actions/checkout@v3
     - uses: fsfe/reuse-action@v1
